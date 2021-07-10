@@ -1,34 +1,37 @@
 #include <stdio.h>
 #include <stdlib.h>
 #define INF 0xFFFFFFFF
-
+/********************** Struttura dati che salva il grafo ************************/
+//struttura dati che salva un nodo del grafo
 typedef struct Nodo{
-    unsigned long int indice;
-    struct Arco *head;
+    unsigned long int indice;           //indice nodo
+    struct Arco *head;                  //lista di adicenza degli archi
 }Nodo;
+//struttura dati che salva un arco del grafo
 typedef struct Arco{
-    unsigned long int peso;
+    unsigned long int peso;         //peso arco
     struct Arco *next;              //puntatore all'arco successivo del nodo padre
     struct Nodo *nodo;             //puntatore al nodo a cui è collegato l'arco
 }Arco;
-//Strutture per il MinHeap
+/********************** Struttura dati che salva il MinHeap ************************/
 typedef unsigned long int tipobaseValCP;
 typedef unsigned long int tipobasePrCP;
 //Struttura Nodo Coda di priorità
 typedef struct{
-    tipobaseValCP valore;
-    tipobasePrCP priorita;
-    unsigned long int posizione;
+    tipobaseValCP valore;                   //indice nodo inserito nella CP
+    tipobasePrCP priorita;                  //priorita nodo (peso cammino minimo relativo)
+    unsigned long int posizione;            //posizione all'interno della CP
 }NodoCP;
 //Struttura coda di priorità
 typedef struct{
-    unsigned long int capacita;
-    unsigned long int dim;
-    NodoCP* H;
+    unsigned long int capacita;             //dimensione massima CP
+    unsigned long int dim;                  //numero di elementi aggiunti alla CP
+    NodoCP* H;                              //Puntatore al MinHeap
 }CP;
 
+/********************** Prototipi di funzione ************************/
 void AggiungiGrafo(unsigned long int d);
-void stampaGrafo(unsigned long int d, Nodo* nodoPtr);
+//void stampaGrafo(unsigned long int d, Nodo* nodoPtr);
 void MakeCP(CP* p, unsigned long int n);
 void scambio(NodoCP v[], unsigned long int i, unsigned long int j);
 void InsertMinCP(CP* p, tipobaseValCP x, tipobasePrCP pr);
@@ -36,59 +39,80 @@ tipobaseValCP DeleteMinCP(CP* p);
 void DecreaseKeyMinCP(CP* p, tipobaseValCP x, tipobasePrCP pr);
 void minHeapRestore(NodoCP v[], unsigned long int i, unsigned long int n);
 void Dijkstra(Nodo nodi[], unsigned long int sorg, unsigned long int d[], unsigned long int dim);
+void ReleaseGraph(Nodo* nodi, unsigned long int dim);
+
 
 int main() {
     unsigned long int D, K;
-    scanf("%lu %lu", &D, &K);    //Leggo dall'input d e k;
+    scanf("%lu,%lu", &D, &K);    //Leggo dall'input d e k;
     char comando[1];
-    while (scanf("%s", comando) != EOF){
-        if(comando[0] == 'A') {
-            AggiungiGrafo(D);
-        }else{
+    while (scanf("%s", comando) != EOF){                //ciclo che legge tutte le istruzioni in input
+        if(comando[0] == 'A') {                                //controllo se è la AggiungiGrafo
+            AggiungiGrafo(D);                                  //eseguo l'aggiunta del grafo
+        }else{                                                 //altrimenti eseguo la TopK
             //TopK
             printf("Sono nella Top\n");
         }
     }
+    return 0;
 }
-
+/********************** Funzioni che Gestiscono il Grafo ************************/
+//funzione che aggiunge il Grafo
 void AggiungiGrafo(unsigned long int d){
-    Nodo* nodi = (Nodo*) calloc(d, sizeof (Nodo));
-    Nodo* nodo;
-    Arco* arco;
+    Nodo* nodi = (Nodo*) calloc(d, sizeof (Nodo));                      //crea un array di nodi da cui partiranno gli archi
+    Nodo* nodo;                                                         //creo un nodo temporaneo
+    Arco* arco;                                                         //creo un arco temporaneo
     unsigned long int i,j;
-    for(i = 0; i < d; i++){
-        nodo = &(nodi[i]);
-        nodo->indice = i;
-        nodo->head = (Arco*) malloc(sizeof (Arco));
-        arco = nodo->head;
-        for(j = 0; j < d; j++){
-            arco->nodo = &(nodi[j]);
+    for(i = 0; i < d; i++){                                             //ciclo che scorre tutte le righe della matrice di adiacenza
+        nodo = &(nodi[i]);                                              //il nodo di riferimento diventa quello con indice della riga appena letta
+        nodo->indice = i;                                               //salvo l'indice del nodo
+        nodo->head = (Arco*) malloc(sizeof (Arco));                     //creo la head del nodo
+        arco = nodo->head;                                              //salvo la head come primo arco
+        for(j = 0; j < d; j++){                                         //ciclo tutte le colonne della matrice di adiacenza
+            arco->nodo = &(nodi[j]);                                    //collego l'arco da aggiungere al relativo nodo
             if(j == d-1) {
-                scanf("%lu", &arco->peso);
-                arco->next = NULL;
+                scanf("%lu", &arco->peso);                       //leggo il peso dell'arco e lo salvo nel relativo arco
+                arco->next = NULL;                                      //se è l'ultimo arco lo faccio puntare a NULL
             }else{
-                scanf("%lu,", &arco->peso);
-                arco->next = malloc(sizeof (Arco));
-                arco = arco->next;
+                scanf("%lu,", &arco->peso);                       //leggo il peso dell'arco e lo salvo nel relativo arco
+                arco->next = malloc(sizeof (Arco));                      //se non è l'ultimo arco creo il successivo e lo collego all'arco corrente
+                arco = arco->next;                                      //l'arco diventa il nuovo arco
             }
         }
     }
     //stampaGrafo(d,nodi);
-    unsigned long int *pesi = (unsigned long int*)malloc(d*sizeof (unsigned long int));
-    Dijkstra(nodi, 0,pesi,d);
+    unsigned long int *pesi = (unsigned long int*)malloc(d*sizeof (unsigned long int));             //creo l'array dei pesi dei cammini minimi che Dijkstra mi restituisce
+    Dijkstra(nodi, 0,pesi,d);                                                                       //eseguo l'algoritmo di Dijkstra
     unsigned long int somma = 0;
-    for(i = 1; i < d; i++){
-        if(pesi[i] != INF) {
+    for(i = 1; i < d; i++){                                                                             //ciclo tutto l'array dei pesi
+        if(pesi[i] != INF) {                                                                            //se il peso non è infinito allora lo aggiungo alla somma
             somma += pesi[i];
-            printf("Peso distanza nodo %lu: %lu\n", i, pesi[i]);
         }
     }
-    free(pesi);
-    printf("La somma dei cammini minimi è: %lu\n", somma);
+    free(pesi);                                                                                         //libero la memoria occupata dall'array dei pesi
+    ReleaseGraph(nodi, d);
+}
+//funzione che libera tutta la memoria del grafo
+void ReleaseGraph(Nodo* nodi, unsigned long int dim){
+    Arco* tmp;
+    Arco* arco;
+    Nodo* nodo;
+    unsigned long int i;
+    for(i = 0; i < dim;i++){
+        nodo = &nodi[i];
+        arco = nodo->head;
+        while(arco != NULL){
+            tmp = arco->next;
+            free(arco);
+            arco = tmp;
+        }
+        free(nodo);
+    }
+    free(nodi);
 }
 
-void stampaGrafo(unsigned long int d, Nodo* nodoPtr){
-    int i;
+/*void stampaGrafo(unsigned long int d, Nodo* nodoPtr){
+    unsigned long int i;
     for(i = 0; i < d; i++){
         Nodo nodo = nodoPtr[i];
         printf("Nodo %lu:\n", nodo.indice);
@@ -98,12 +122,15 @@ void stampaGrafo(unsigned long int d, Nodo* nodoPtr){
             arco = arco->next;
         }
     }
-}
+}*/
+/********************** Funzioni che Gestiscono il MinHeap ************************/
+//Funzione che crea la CP
 void MakeCP(CP* p, unsigned long int n){
-    p->capacita = n;
-    p->dim = 0;
-    p->H = (NodoCP*)malloc(n*sizeof (NodoCP));
+    p->capacita = n;                                            //imposta la capacità massima della CP a n
+    p->dim = 0;                                                 //imposta il numero di elementi inseriti a 0
+    p->H = (NodoCP*)malloc(n*sizeof (NodoCP));             //crea l'array che rappresenta la CP contenente n NodiCP
 }
+//funzione che effettua il cambio di posizione tra 2 elementi della CP
 void scambio(NodoCP v[], unsigned long int i, unsigned long int j){
     NodoCP tmp = v[i];
     v[i] = v[j];
@@ -111,41 +138,44 @@ void scambio(NodoCP v[], unsigned long int i, unsigned long int j){
     v[i].posizione = i;
     v[j].posizione = j;
 }
+//Funzione che inserisce un nuovo elemento nella CO
 void InsertMinCP(CP* p, tipobaseValCP x, tipobasePrCP pr){
     NodoCP tmp;
     unsigned long int i;
 
     if(p->dim != p->capacita){          //Controllo se la CP non è piena
-        i = p->dim;
-        p->dim = p->dim+1;
+        i = p->dim;                     //salvo il numero di elementi attuale della CP
+        p->dim = p->dim+1;              //incremento il numero di elementi presenti
 
-        tmp.valore = x;
-        tmp.priorita = pr;
-        tmp.posizione = i;
+        tmp.valore = x;                 //salvo l'indice nel nuovo elemento della CP
+        tmp.priorita = pr;              //salvo la priorità nel nuovo elemento della CP
+        tmp.posizione = i;              //salvo la posizione nel nuovo elemento della CP
 
-        p->H[i] = tmp;
+        p->H[i] = tmp;                  //salvo il nodo nella Cp
 
-        while(i > 0 && p->H[i].priorita < p->H[(i-1)/2].priorita){
-            scambio(p->H, i, (i-1)/2);
-            i = (i-1)/2;
+        while(i > 0 && p->H[i].priorita < p->H[(i-1)/2].priorita){          //ciclo che controlla se la priorità del nodo è minore di quella del padre e controlla se sono arrivato alla root
+            scambio(p->H, i, (i-1)/2);                                   //Eventualmente scambia il nodo con il padre
+            i = (i-1)/2;                                                    //salva il nuovo indice del nodo
         }
     }
 }
+//funzione che sistema la CP rimettendo il minimo in prima posizione
 void minHeapRestore(NodoCP v[], unsigned long int i, unsigned long int n){
     unsigned long int min = i;
-    if (2*i+1 < n && v[2*i+1].priorita < v[min].priorita) min=2*i+1;
-    if (2*i+2 < n && v[2*i+2].priorita < v[min].priorita) min=2*i+2;
-    if(i!=min){
+    if (2*i+1 < n && v[2*i+1].priorita < v[min].priorita) min=2*i+1;        //controllo se il figlio sinistro può esistere nella CP e se la priorità del figlio sinistro è minore di quella del padre. Se lo è il nuovo minimo diventa il figlio sinistro
+    if (2*i+2 < n && v[2*i+2].priorita < v[min].priorita) min=2*i+2;        //come il controllo precedente solo per il figlio destro
+    if(i!=min){                                                             //se il minimo è cambiato effettuo uno scambio tra padre e figlio e continuo a sistemare la CP
         scambio(v,i,min);
         minHeapRestore(v,min,n);
     }
 }
+//Funzione che elimina l'elemento minimo dalla CP
 tipobaseValCP DeleteMinCP(CP* p){
     if(p->dim != 0){                        //controllo che la CP non sia vuota
-        p->dim = p->dim-1;
+        p->dim = p->dim-1;                  //decremento il numero di elementi all'interno della CP
         scambio(p->H, 0, p->dim);
-        minHeapRestore(p->H, 0, p->dim);
-        return p->H[p->dim].valore;
+        minHeapRestore(p->H, 0, p->dim);    //sistemo la CP
+        return p->H[p->dim].valore;         //restituisco l'indice del nodo
     }
 }
 void DecreaseKeyMinCP(CP* p, tipobaseValCP x, tipobasePrCP pr){
@@ -166,7 +196,7 @@ void DecreaseKeyMinCP(CP* p, tipobaseValCP x, tipobasePrCP pr){
         }
     }
 }
-
+/********************** Algoritmo di Dijkstra ************************/
 void Dijkstra(Nodo* nodi, unsigned long int sorg,unsigned long int d[], unsigned long int dim){
     unsigned long int u;
     CP coda;
@@ -201,3 +231,5 @@ void Dijkstra(Nodo* nodi, unsigned long int sorg,unsigned long int d[], unsigned
     }
     free(coda.H);
 }
+
+
