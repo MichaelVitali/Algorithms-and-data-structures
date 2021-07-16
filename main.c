@@ -34,7 +34,7 @@ typedef struct{
     unsigned long int indiceGrafo;
 }NodoTopK;
 /********************** Prototipi di funzione ************************/
-unsigned long int AggiungiGrafo(unsigned long int d);
+unsigned long int AggiungiGrafo(unsigned long int d, Nodo* nodi);
 void MakeCP(CP* p, unsigned long int n);
 void scambio(NodoCP v[], unsigned long int i, unsigned long int j);
 void InsertMinCP(CP* p, tipobaseValCP x, tipobasePrCP pr);
@@ -54,10 +54,11 @@ int main() {
     NodoTopK* topGrafi = (NodoTopK *) malloc(K*sizeof (NodoTopK));
     unsigned long int indiceGrafo = 0;
     char comando[13];
+    Nodo* nodi = (Nodo*) calloc(D, sizeof (Nodo));
 
     while (scanf("%s", comando) != EOF){                //ciclo che legge tutte le istruzioni in input
         if(comando[0] == 'A') {                                //controllo se è la AggiungiGrafo
-            unsigned long int somma = AggiungiGrafo(D);        //eseguo l'aggiunta del grafo e il calcolo dei cammini minimi
+            unsigned long int somma = AggiungiGrafo(D, nodi);        //eseguo l'aggiunta del grafo e il calcolo dei cammini minimi
             if(indiceTop < K){
                 topGrafi[indiceTop].sommaCammini = somma;
                 topGrafi[indiceTop].indiceGrafo = indiceGrafo;
@@ -67,9 +68,9 @@ int main() {
                 indiceMax = 0;
                 for(i = 0; i < K; i++){
                     if(topGrafi[i].sommaCammini == maxSomma){
-                        if(topGrafi[i].indiceGrafo >= indiceMax){
+                        if(topGrafi[i].indiceGrafo > topGrafi[indiceMax].indiceGrafo){
                             maxSomma = topGrafi[i].sommaCammini;
-                            indiceMax = topGrafi[i].indiceGrafo;
+                            indiceMax = i;
                         }
                     }else if(topGrafi[i].sommaCammini > maxSomma){
                         maxSomma = topGrafi[i].sommaCammini;
@@ -80,7 +81,6 @@ int main() {
                     topGrafi[indiceMax].indiceGrafo = indiceGrafo;
                     topGrafi[indiceMax].sommaCammini = somma;
                 }
-
             }
             indiceGrafo++;
         }else if(comando[0] == 'T'){                                                 //altrimenti eseguo la TopK
@@ -93,19 +93,19 @@ int main() {
             }
         }
     }
+    ReleaseGraph(nodi,D);
     return 0;
 }
 /********************** Funzioni che Gestiscono il Grafo ************************/
 //funzione che aggiunge il Grafo
-unsigned long int AggiungiGrafo(unsigned long int d){
-    Nodo* nodi = (Nodo*) calloc(d, sizeof (Nodo));
+unsigned long int AggiungiGrafo(unsigned long int d, Nodo* nodi){
     Nodo* nodo;                                                         //creo un nodo temporaneo
     Arco* arco;                                                         //creo un arco temporaneo
     unsigned long int i,j;
     for(i = 0; i < d; i++){                                             //ciclo che scorre tutte le righe della matrice di adiacenza
         nodo = &(nodi[i]);                                              //il nodo di riferimento diventa quello con indice della riga appena letta
         nodo->indice = i;                                               //salvo l'indice del nodo
-        nodo->head = (Arco*) malloc(sizeof (Arco));                     //creo la head del nodo
+        if(nodo->head == NULL) nodo->head = (Arco*) malloc(sizeof (Arco));                     //creo la head del nodo
         arco = nodo->head;                                              //salvo la head come primo arco
         for(j = 0; j < d; j++){                                         //ciclo tutte le colonne della matrice di adiacenza
             arco->nodo = &(nodi[j]);                                    //collego l'arco da aggiungere al relativo nodo
@@ -118,7 +118,7 @@ unsigned long int AggiungiGrafo(unsigned long int d){
                 if(scanf("%lu,", &arco->peso) == EOF){                  //leggo il peso dell'arco e lo salvo nel relativo arco
                     return INF;
                 };
-                arco->next = malloc(sizeof (Arco));                      //se non è l'ultimo arco creo il successivo e lo collego all'arco corrente
+                if(arco->next == NULL) arco->next = malloc(sizeof (Arco));                      //se non è l'ultimo arco creo il successivo e lo collego all'arco corrente
                 arco = arco->next;                                      //l'arco diventa il nuovo arco
             }
         }
@@ -132,7 +132,6 @@ unsigned long int AggiungiGrafo(unsigned long int d){
         }
     }
     free(pesi);                                                                                        //libero la memoria occupata dall'array dei pesi
-    ReleaseGraph(nodi,d);
     return somma;
 }
 //funzione che libera tutta la memoria del grafo
