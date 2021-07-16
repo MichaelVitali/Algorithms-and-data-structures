@@ -52,7 +52,6 @@ int main() {
         return -1;
     }
     NodoTopK* topGrafi = (NodoTopK *) malloc(K*sizeof (NodoTopK));
-    for(i = 0; i < K; i++) topGrafi[i].indiceGrafo = INF;
     unsigned long int indiceGrafo = 0;
     char comando[13];
 
@@ -62,30 +61,36 @@ int main() {
             if(indiceTop < K){
                 topGrafi[indiceTop].sommaCammini = somma;
                 topGrafi[indiceTop].indiceGrafo = indiceGrafo;
-                if(maxSomma < somma){
-                    maxSomma = somma;
-                    indiceMax = indiceTop;
-                }
                 indiceTop++;
             }else{
-                if(somma < maxSomma){
-                    topGrafi[indiceMax].indiceGrafo = indiceGrafo;
-                    topGrafi[indiceMax].sommaCammini = somma;
-                }
                 maxSomma = 0;
+                indiceMax = 0;
                 for(i = 0; i < K; i++){
-                    if(topGrafi[i].sommaCammini > maxSomma){
+                    if(topGrafi[i].sommaCammini == maxSomma){
+                        if(topGrafi[i].indiceGrafo >= indiceMax){
+                            maxSomma = topGrafi[i].sommaCammini;
+                            indiceMax = topGrafi[i].indiceGrafo;
+                        }
+                    }else if(topGrafi[i].sommaCammini > maxSomma){
                         maxSomma = topGrafi[i].sommaCammini;
                         indiceMax = i;
                     }
                 }
+                if(somma < maxSomma){
+                    topGrafi[indiceMax].indiceGrafo = indiceGrafo;
+                    topGrafi[indiceMax].sommaCammini = somma;
+                }
+
             }
             indiceGrafo++;
         }else if(comando[0] == 'T'){                                                 //altrimenti eseguo la TopK
-            for(i = 0; i < K; i++){
-                if(topGrafi[i].indiceGrafo != INF) printf("%lu ", topGrafi[i].indiceGrafo);
+            if(indiceTop < K){
+                for(i = 0; i < indiceTop-1; i++) printf("%lu ", topGrafi[i].indiceGrafo);
+                printf("%lu\n", topGrafi[i].indiceGrafo);
+            }else{
+                for(i = 0; i < K-1; i++) printf("%lu ", topGrafi[i].indiceGrafo);
+                printf("%lu\n", topGrafi[i].indiceGrafo);
             }
-            printf("\n");
         }
     }
     return 0;
@@ -93,7 +98,7 @@ int main() {
 /********************** Funzioni che Gestiscono il Grafo ************************/
 //funzione che aggiunge il Grafo
 unsigned long int AggiungiGrafo(unsigned long int d){
-    Nodo* nodi = (Nodo*) calloc(d,sizeof (Nodo));
+    Nodo* nodi = (Nodo*) calloc(d, sizeof (Nodo));
     Nodo* nodo;                                                         //creo un nodo temporaneo
     Arco* arco;                                                         //creo un arco temporaneo
     unsigned long int i,j;
@@ -126,8 +131,7 @@ unsigned long int AggiungiGrafo(unsigned long int d){
             somma += pesi[i];
         }
     }
-    free(pesi);                                                                                      //libero la memoria occupata dall'array dei pesi
-    printf("Somma: %lu\n", somma);
+    free(pesi);                                                                                        //libero la memoria occupata dall'array dei pesi
     ReleaseGraph(nodi,d);
     return somma;
 }
