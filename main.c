@@ -33,6 +33,7 @@ typedef struct{
     unsigned long int sommaCammini;
     unsigned long int indiceGrafo;
 }NodoTopK;
+
 /********************** Prototipi di funzione ************************/
 unsigned long int AggiungiGrafo(unsigned long int d, Nodo* nodi);
 void MakeCP(CP* p, unsigned long int n);
@@ -42,44 +43,39 @@ tipobaseValCP DeleteMinCP(CP* p);
 void DecreaseKeyMinCP(CP* p, tipobaseValCP x, tipobasePrCP pr);
 void minHeapRestore(NodoCP v[], unsigned long int i, unsigned long int n);
 void Dijkstra(Nodo nodi[], unsigned long int sorg, unsigned long int d[], unsigned long int dim);
-void ReleaseGraph(Nodo* nodi, unsigned long int dim);
-
+//void ReleaseGraph(Nodo* nodi, unsigned long int dim);
+void buildMaxHeap(NodoTopK* topGrafi, unsigned long int size);
+void maxHeapify(NodoTopK* heap, unsigned long int i, unsigned long int size);
+void deleteRoot(NodoTopK heap[], unsigned long int size, NodoTopK n);
 
 int main() {
     unsigned long int D, K;
-    unsigned long int i, indiceTop = 0, maxSomma = 0, indiceMax = 0;
+    unsigned long int i, indiceTop = 0;
     if(scanf("%lu %lu", &D, &K) == EOF){                               //Leggo dall'input d e k;
         return -1;
     }
     NodoTopK* topGrafi = (NodoTopK *) malloc(K*sizeof (NodoTopK));
     unsigned long int indiceGrafo = 0;
     char comando[13];
-    Nodo* nodi = (Nodo*) calloc(D, sizeof (Nodo));
+    Nodo* nodi = (Nodo*) malloc(D* sizeof (Nodo));
 
     while (scanf("%s", comando) != EOF){                //ciclo che legge tutte le istruzioni in input
         if(comando[0] == 'A') {                                //controllo se è la AggiungiGrafo
             unsigned long int somma = AggiungiGrafo(D, nodi);        //eseguo l'aggiunta del grafo e il calcolo dei cammini minimi
             if(indiceTop < K){
-                topGrafi[indiceTop].sommaCammini = somma;
                 topGrafi[indiceTop].indiceGrafo = indiceGrafo;
+                topGrafi[indiceTop].sommaCammini = somma;
                 indiceTop++;
-            }else{
-                maxSomma = 0;
-                indiceMax = 0;
-                for(i = 0; i < K; i++){
-                    if(topGrafi[i].sommaCammini == maxSomma){
-                        if(topGrafi[i].indiceGrafo > topGrafi[indiceMax].indiceGrafo){
-                            maxSomma = topGrafi[i].sommaCammini;
-                            indiceMax = i;
-                        }
-                    }else if(topGrafi[i].sommaCammini > maxSomma){
-                        maxSomma = topGrafi[i].sommaCammini;
-                        indiceMax = i;
-                    }
+            }else {
+                if (indiceTop == K){
+                    buildMaxHeap(topGrafi, K);
+                    indiceTop++;
                 }
-                if(somma < maxSomma){
-                    topGrafi[indiceMax].indiceGrafo = indiceGrafo;
-                    topGrafi[indiceMax].sommaCammini = somma;
+                if (topGrafi[0].sommaCammini > somma) {
+                    NodoTopK n;
+                    n.sommaCammini = somma;
+                    n.indiceGrafo = indiceGrafo;
+                    deleteRoot(topGrafi, K, n);
                 }
             }
             indiceGrafo++;
@@ -93,8 +89,32 @@ int main() {
             }
         }
     }
-    ReleaseGraph(nodi,D);
     return 0;
+}
+/********************************* Gestione Max Heap ******************************/
+void buildMaxHeap(NodoTopK* topGrafi, unsigned long int size){
+    unsigned long int i;
+    for(i = (size/2)-1; i >= 0; i--){
+        maxHeapify(topGrafi, i, size);
+        if(i == 0) break;
+    }
+}
+void maxHeapify(NodoTopK heap[], unsigned long int i, unsigned long int size){
+    unsigned long int l = (i*2)+1, r = (i*2)+2, largest = i;
+    if(l < size && heap[l].sommaCammini > heap[largest].sommaCammini) largest = l;
+    else if(l < size && heap[l].sommaCammini == heap[largest].sommaCammini && heap[l].indiceGrafo > heap[largest].indiceGrafo) largest = l;
+    if(r < size && heap[r].sommaCammini > heap[largest].sommaCammini) largest = r;
+    else if(r < size && heap[r].sommaCammini == heap[largest].sommaCammini && heap[r].indiceGrafo > heap[largest].indiceGrafo) largest = r;
+    if(largest != i){
+        NodoTopK tmp = heap[i];
+        heap[i] = heap[largest];
+        heap[largest] = tmp;
+        maxHeapify(heap, largest, size);
+    }
+}
+void deleteRoot(NodoTopK heap[], unsigned long int size, NodoTopK n){
+    heap[0] = n;
+    maxHeapify(heap, 0, size);
 }
 /********************** Funzioni che Gestiscono il Grafo ************************/
 //funzione che aggiunge il Grafo
@@ -112,12 +132,12 @@ unsigned long int AggiungiGrafo(unsigned long int d, Nodo* nodi){
             if(j == d-1) {
                 if(scanf("%lu", &arco->peso) == EOF){            //leggo il peso dell'arco e lo salvo nel relativo arco
                     return INF;
-                };
+                }
                 arco->next = NULL;                                      //se è l'ultimo arco lo faccio puntare a NULL
             }else{
                 if(scanf("%lu,", &arco->peso) == EOF){                  //leggo il peso dell'arco e lo salvo nel relativo arco
                     return INF;
-                };
+                }
                 if(arco->next == NULL) arco->next = malloc(sizeof (Arco));                      //se non è l'ultimo arco creo il successivo e lo collego all'arco corrente
                 arco = arco->next;                                      //l'arco diventa il nuovo arco
             }
@@ -205,7 +225,6 @@ tipobaseValCP DeleteMinCP(CP* p){
         minHeapRestore(p->H, 0, p->dim);    //sistemo la CP
         return p->H[p->dim].valore;         //restituisco l'indice del nodo
     //}
-    //return INF;
 }
 void DecreaseKeyMinCP(CP* p, tipobaseValCP x, tipobasePrCP pr){
     unsigned long int i;
@@ -237,31 +256,26 @@ void Dijkstra(Nodo* nodi, unsigned long int sorg,unsigned long int d[], unsigned
     InsertMinCP(&coda, sorg, d[sorg]);
     while (coda.dim != 0) {
         u = DeleteMinCP(&coda);
-        //if (u != INF) {
-            arco = nodi[u].head;
-            if (arco != NULL) {
-                if (d[arco->nodo->indice] == INF && arco->peso != 0) {
-                    InsertMinCP(&coda, arco->nodo->indice, d[u] + arco->peso);
-                    d[arco->nodo->indice] = d[u] + arco->peso;
-                } else if (d[u] + arco->peso < d[arco->nodo->indice] && arco->peso != 0) {
-                    DecreaseKeyMinCP(&coda, arco->nodo->indice, d[u] + arco->peso);
-                    d[arco->nodo->indice] = d[u] + arco->peso;
-                }
-                while (arco->next != NULL) {
-                    if (d[arco->next->nodo->indice] == INF && arco->next->peso != 0) {
-                        InsertMinCP(&coda, arco->next->nodo->indice, d[u] + arco->next->peso);
-                        d[arco->next->nodo->indice] = d[u] + arco->next->peso;
-                    } else if (d[u] + arco->next->peso < d[arco->next->nodo->indice] && arco->next->peso != 0) {
-                        DecreaseKeyMinCP(&coda, arco->next->nodo->indice, d[u] + arco->next->peso);
-                        d[arco->next->nodo->indice] = d[u] + arco->next->peso;
-                    }
-                    arco = arco->next;
-                }
+        arco = nodi[u].head;
+        if (arco != NULL) {
+            if (d[arco->nodo->indice] == INF && arco->peso != 0) {
+                InsertMinCP(&coda, arco->nodo->indice, d[u] + arco->peso);
+                d[arco->nodo->indice] = d[u] + arco->peso;
+            } else if (d[u] + arco->peso < d[arco->nodo->indice] && arco->peso != 0) {
+                DecreaseKeyMinCP(&coda, arco->nodo->indice, d[u] + arco->peso);
+                d[arco->nodo->indice] = d[u] + arco->peso;
             }
-        //}
+            while (arco->next != NULL) {
+                if (d[arco->next->nodo->indice] == INF && arco->next->peso != 0) {
+                    InsertMinCP(&coda, arco->next->nodo->indice, d[u] + arco->next->peso);
+                    d[arco->next->nodo->indice] = d[u] + arco->next->peso;
+                } else if (d[u] + arco->next->peso < d[arco->next->nodo->indice] && arco->next->peso != 0) {
+                    DecreaseKeyMinCP(&coda, arco->next->nodo->indice, d[u] + arco->next->peso);
+                    d[arco->next->nodo->indice] = d[u] + arco->next->peso;
+                }
+                arco = arco->next;
+            }
+        }
     }
     free(coda.H);
 }
-
-
-
