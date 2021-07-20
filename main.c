@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #define INF 0xFFFFFFFF
 /********************** Struttura dati che salva il grafo ************************/
 //struttura dati che salva un nodo del grafo
@@ -56,10 +57,9 @@ int main() {
     }
     NodoTopK* topGrafi = (NodoTopK *) malloc(K*sizeof (NodoTopK));
     unsigned long int indiceGrafo = 0;
-    char comando[13];
+    char comando[15];
     Nodo* nodi = (Nodo*) malloc(D* sizeof (Nodo));
-
-    while (scanf("%s", comando) != EOF){                //ciclo che legge tutte le istruzioni in input
+    while (fgets(comando,15,stdin) != NULL){                //ciclo che legge tutte le istruzioni in input
         if(comando[0] == 'A') {                                //controllo se è la AggiungiGrafo
             unsigned long int somma = AggiungiGrafo(D, nodi);        //eseguo l'aggiunta del grafo e il calcolo dei cammini minimi
             if(indiceTop < K){
@@ -121,27 +121,26 @@ void deleteRoot(NodoTopK heap[], unsigned long int size, NodoTopK n){
 unsigned long int AggiungiGrafo(unsigned long int d, Nodo* nodi){
     Nodo* nodo;                                                         //creo un nodo temporaneo
     Arco* arco;                                                         //creo un arco temporaneo
+    char* ptr = NULL, *token = NULL;
+    unsigned long int dim = (d*32)+d+1;
+    char stringa[dim];
     unsigned long int i,j;
     for(i = 0; i < d; i++){                                             //ciclo che scorre tutte le righe della matrice di adiacenza
         nodo = &(nodi[i]);                                              //il nodo di riferimento diventa quello con indice della riga appena letta
         nodo->indice = i;                                               //salvo l'indice del nodo
         if(nodo->head == NULL) nodo->head = (Arco*) malloc(sizeof (Arco));                     //creo la head del nodo
         arco = nodo->head;                                              //salvo la head come primo arco
+        ptr = fgets(stringa, dim, stdin);
+        if(ptr == NULL) return INF;
+        token = strtok(stringa, ",");
         for(j = 0; j < d; j++){                                         //ciclo tutte le colonne della matrice di adiacenza
             arco->nodo = &(nodi[j]);                                    //collego l'arco da aggiungere al relativo nodo
-            if(j == d-1) {
-                if(scanf("%lu", &arco->peso) == EOF){            //leggo il peso dell'arco e lo salvo nel relativo arco
-                    return INF;
-                }
-                arco->next = NULL;                                      //se è l'ultimo arco lo faccio puntare a NULL
-            }else{
-                if(scanf("%lu,", &arco->peso) == EOF){                  //leggo il peso dell'arco e lo salvo nel relativo arco
-                    return INF;
-                }
-                if(arco->next == NULL) arco->next = malloc(sizeof (Arco));                      //se non è l'ultimo arco creo il successivo e lo collego all'arco corrente
-                arco = arco->next;                                      //l'arco diventa il nuovo arco
-            }
+            arco->peso = strtoul(token, &ptr , 10);
+            if(arco->next == NULL) arco->next = malloc(sizeof (Arco));                      //se non è l'ultimo arco creo il successivo e lo collego all'arco corrente
+            arco = arco->next;                                      //l'arco diventa il nuovo arco
+            token = strtok(NULL,",");
         }
+        arco->next = NULL;
     }
     unsigned long int *pesi = (unsigned long int*)malloc(d*sizeof (unsigned long int));             //creo l'array dei pesi dei cammini minimi che Dijkstra mi restituisce
     Dijkstra(nodi, 0,pesi,d);                                                                       //eseguo l'algoritmo di Dijkstra
@@ -151,7 +150,7 @@ unsigned long int AggiungiGrafo(unsigned long int d, Nodo* nodi){
             somma += pesi[i];
         }
     }
-    free(pesi);                                                                                        //libero la memoria occupata dall'array dei pesi
+    free(pesi);                                                                                             //libero la memoria occupata dall'array dei pesi
     return somma;
 }
 //funzione che libera tutta la memoria del grafo
@@ -265,7 +264,7 @@ void Dijkstra(Nodo* nodi, unsigned long int sorg,unsigned long int d[], unsigned
                 DecreaseKeyMinCP(&coda, arco->nodo->indice, d[u] + arco->peso);
                 d[arco->nodo->indice] = d[u] + arco->peso;
             }
-            while (arco->next != NULL) {
+            while (arco->next->next != NULL) {
                 if (d[arco->next->nodo->indice] == INF && arco->next->peso != 0) {
                     InsertMinCP(&coda, arco->next->nodo->indice, d[u] + arco->next->peso);
                     d[arco->next->nodo->indice] = d[u] + arco->next->peso;
