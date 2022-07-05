@@ -1,5 +1,3 @@
-# PFAPI21_Vitali_10730463
-
 <h2>Prova Finale di Algoritmi e Principi dell'Informatica</h2>
 
 ---
