@@ -19,7 +19,7 @@ Richiede di aggiungere un grafo a quelli considerati per stilare la classifica. 
 ogni rigo, con gli elementi separati da virgole. I nodi del grafo sono da considerarsi etichettati logicamente con un indice intero tra 0 e d-1; il nodo in
 posizione 0 è quello la cui stella uscente è descritta dalla prima riga della matrice.
 
-<h4>AggiungiGrafo</h4>
+<h4>TopK</h4>
 
 • Si consideri ogni grafo dall'inizio del programma fino al comando TopK etichettato con un indice intero corrispondente al numero di grafi letti prima di esso<br>
 • TopK richiede al programma di stampare gli indici interi dei k grafi aventi i k valori più piccoli della seguente metrica:<br>
