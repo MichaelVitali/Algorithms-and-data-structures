@@ -7,7 +7,7 @@
 The goal of the project is to create a ranked list of direct weighted graphs. The program takes as input:
 1. <b>d:</b> number of nodes of graphs.
 2. <b>k:</b> length of ranked list.
-3. A sequence of actions to do between AddGraph and TopK.
+3. A sequence of actions to do between <b>AddGraph</b> and <b>TopK</b>.
 
 The solution uses the Dijkstra's algorithm to compute the minimum path for each matrix and a max-heap to implement the ranked list.
 
